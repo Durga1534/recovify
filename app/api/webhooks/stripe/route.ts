@@ -15,11 +15,10 @@ export async function POST(req: Request): Promise<NextResponse<StripeWebhookResp
     const signature: string | null = headersList.get("stripe-signature");
 
     if(!signature || !process.env.STRIPE_WEBHOOK_SECRET) {
-        throw new Error("[Stripe Webhook]: Missing signature or STRIPE_WEBHOOK_SECRET");
         return NextResponse.json(
             {received: false, error: "Missing signature or webhook secret configuration"},
             {status: 400}
-        )
+        );
     }
 
     let event: Stripe.Event;
@@ -32,11 +31,10 @@ export async function POST(req: Request): Promise<NextResponse<StripeWebhookResp
         )
     }catch(err) {
         const errorMessage = err instanceof Error ? err.message: "Unknown signature validation error";
-        throw new Error(`[Stripe Webhook Signature Error] : ${errorMessage}`);
         return NextResponse.json(
             {received: false, error: `Webhook Signature Verification Failed: ${errorMessage}`},
             {status: 400}
-        )
+        );
     }
 
     switch (event.type) {
@@ -55,8 +53,10 @@ export async function POST(req: Request): Promise<NextResponse<StripeWebhookResp
             const hostedInvoiceUrl: string | null = invoice.hosted_invoice_url ?? null;
 
             if(!customerEmail || !stripeCustomerId) {
-                throw new Error(`[Stripe Webhook]: Skipping invoice ${stripeInvoiceId} due to missing customer email/ID`);
-                break;
+                return NextResponse.json(
+                    {received: false, error: `Invoice ${stripeInvoiceId} is missing customer email or ID`},
+                    {status: 422}
+                );
             }
 
             //1. Locate the SaaS founder registered on our platform
@@ -69,15 +69,16 @@ export async function POST(req: Request): Promise<NextResponse<StripeWebhookResp
 
             // Fallback for single-tenant local dev testing if user account sync is pending
                         const [defaultUser] = targetUser
-                            ? [targetUser]
-                            : await db.select().from(users).limit(1);
+                                        ? [targetUser]
+                                        : process.env.NODE_ENV !== "production"
+                                            ? await db.select().from(users).limit(1)
+                                            : [];
 
             if(!defaultUser) {
-                throw new Error(`[Stripe Webhook]: No registered SaaS user found to attach failed invoice ${stripeInvoiceId}`);
                 return NextResponse.json(
                     {received: false, error: "No registered user found for target Stripe account"},
                     {status: 422}
-                )
+                            );
             }
 
             //2. Atomic Upset into Neon DB

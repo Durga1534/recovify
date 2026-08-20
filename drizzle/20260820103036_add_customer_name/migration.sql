@@ -1,0 +1,1 @@
+ALTER TABLE "failed_invoices" ADD COLUMN "customer_name" text;

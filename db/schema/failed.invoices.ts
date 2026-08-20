@@ -9,6 +9,7 @@ export const failedInvoices = pgTable("failed_invoices", {
        stripeInvoiceId: text("stripe_invoice_id").notNull().unique(),
        stripeCustomerId: text("stripe_customer_id").notNull(),
        customerEmail: text("customer_email").notNull(),
+       customerName: text("customer_name"),
        customerPhone: text("customer_phone"),
        amountDue: integer("amount_due").notNull(),
        currency: text("currency").default("usd").notNull(),

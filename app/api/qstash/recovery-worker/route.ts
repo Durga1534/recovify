@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { Receiver } from "@upstash/qstash";
 import {db} from "@/db";
 import {failedInvoices, recoveryLogs} from "@/db/schema";
+import { sendDunningEmail } from "@/lib/email/resend";
+import { sendWhatsAppDunning } from "@/lib/whatsapp/twilio";
 import type { QStashWorkerResponse, RecoveryJobPayload } from "@/lib/qstash/types";
 import { eq } from "drizzle-orm";
 
@@ -31,7 +33,25 @@ export async function POST(req: Request): Promise<NextResponse<QStashWorkerRespo
         }
     }
 
-    const payload = JSON.parse(bodyText) as RecoveryJobPayload;
+    let payload: RecoveryJobPayload;
+    try {
+        payload = JSON.parse(bodyText) as RecoveryJobPayload;
+    } catch {
+        return NextResponse.json(
+            {success: false, message: "Invalid JSON payload"},
+            {status: 400}
+        );
+    }
+
+    if (
+        typeof payload.failedInvoiceId !== "string" ||
+        ![1, 2, 3].includes(payload.step)
+    ) {
+        return NextResponse.json(
+            {success: false, message: "Invalid recovery job payload"},
+            {status: 400}
+        );
+    }
 
     //2. Check if invoice was already paid/recovered before sending reminders
     const [invoice] = await db
@@ -50,16 +70,52 @@ export async function POST(req: Request): Promise<NextResponse<QStashWorkerRespo
     //3. Dispatch Notofication based on Queue step
     console.log(`[QStash Worker]: Executing Step ${payload.step} for ${payload.customerEmail}`);
 
+    const paymentLink = invoice.hostedInvoiceUrl || process.env.NEXT_PUBLIC_APP_URL || "https://stripe.com";
+    let messageId: string | null = null;
+    let channel: "email" | "whatsapp" = "email";
+
+    //Dispatch Strategy based on Sequence step
+    if(payload.step === 2 && invoice.customerPhone) {
+        channel = "whatsapp"
+        const result = await sendWhatsAppDunning({
+            toPhone: invoice.customerPhone,
+            customerName: invoice.customerName,
+            amountDue: invoice.amountDue,
+            currency: invoice.currency,
+            paymentLink,
+        });
+        messageId = result.sid;
+    }else {
+        channel = "email";
+        const result = await sendDunningEmail({
+            to: invoice.customerEmail,
+            customerName: invoice.customerName,
+            amountDue: invoice.amountDue,
+            currency: invoice.currency,
+            paymentLink,
+        });
+        messageId = result.id;
+
+        //Audit trail insertion into Neon DB
+    }
+
     //Log dispatch attempt in Neon DB
     await db.insert(recoveryLogs).values({
         failedInvoiceId: invoice.id,
-        channel: payload.step === 2 && payload.customerPhone ? "whatsapp" : "email",
-        status: "sent",
-        payloadMessageId: `qstash-step-${payload.step}-${Date.now()}`,
+        channel,
+        status:  messageId ? "sent" : "failed",
+        payloadMessageId: messageId,
     });
 
+    if (!messageId) {
+        return NextResponse.json(
+            {success: false, message: `Failed to send recovery step ${payload.step} via ${channel}`},
+            {status: 502}
+        );
+    }
+
     return NextResponse.json(
-        {success: true, message: `Successfully executed recovery step ${payload.step}`},
+        {success: true, message: `Successfully executed recovery step ${payload.step} via ${channel}`},
         {status: 200}
     );
 }
