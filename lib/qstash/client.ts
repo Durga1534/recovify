@@ -5,5 +5,6 @@ if(!process.env.QSTASH_TOKEN) {
 }
 
 export const qstashClient = new Client({
+    baseUrl: process.env.QSTASH_BASE_URL,
     token: process.env.QSTASH_TOKEN,
 });

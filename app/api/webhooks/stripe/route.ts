@@ -3,8 +3,10 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { db } from "@/db";
 import { failedInvoices, users } from "@/db/schema";
+import { qstashClient } from "@/lib/qstash/client";
 import { stripe } from "@/lib/stripe/client";
 import type { StripeWebhookResponse } from "@/lib/stripe/types";
+import type { RecoveryJobPayload } from "@/lib/qstash/types";
 import { eq } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
@@ -104,6 +106,38 @@ export async function POST(req: Request): Promise<NextResponse<StripeWebhookResp
                     updatedAt: new Date(),
                 }
               });
+
+            const [storedInvoice] = await db
+              .select()
+              .from(failedInvoices)
+              .where(eq(failedInvoices.stripeInvoiceId, stripeInvoiceId))
+              .limit(1);
+
+            if (!storedInvoice) {
+                return NextResponse.json(
+                    {received: false, error: "Failed to load the stored invoice for recovery scheduling"},
+                    {status: 500}
+                );
+            }
+
+            const recoveryJob: RecoveryJobPayload = {
+                failedInvoiceId: storedInvoice.id,
+                stripeInvoiceId: storedInvoice.stripeInvoiceId,
+                customerEmail: storedInvoice.customerEmail,
+                customerPhone: storedInvoice.customerPhone,
+                customerName: storedInvoice.customerName,
+                amountDue: storedInvoice.amountDue,
+                currency: storedInvoice.currency,
+                hostedInvoiceUrl: storedInvoice.hostedInvoiceUrl,
+                step: 1,
+            };
+
+            await qstashClient.publishJSON({
+                url: `${process.env.NEXT_PUBLIC_APP_URL}/api/qstash/recovery-worker`,
+                body: recoveryJob,
+                retries: 3,
+            });
+
               console.log(`[Stripe Webhook Success]: Logged failed invoice ${stripeInvoiceId} ($${amountDue / 100})`);
               break;
         }
