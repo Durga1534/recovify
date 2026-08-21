@@ -20,7 +20,7 @@ export interface RecentInvoiceActivity {
     createdAt: Date;
 }
 
-export async function getDashBoardMetrics(userId: string): Promise<DashboardMetrics> {
+export async function getDashboardMetrics(userId: string): Promise<DashboardMetrics> {
     const result = await db.select({
         status: failedInvoices.status,
         totalAmount: sql<number>`SUM(${failedInvoices.amountDue})`,
