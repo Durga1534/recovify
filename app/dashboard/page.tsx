@@ -43,6 +43,11 @@ export default async function DashboardPage() {
     user = newUser;
   }
 
+  // Redirect to onboarding if Stripe account not connected
+  if (!user.stripeAccountId) {
+    redirect("/dashboard/onboarding");
+  }
+
   const metrics = await getDashboardMetrics(user.id);
   const recentInvoices = await getRecentInvoices(user.id, 10);
 
