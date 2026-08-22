@@ -3,9 +3,10 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { getDashboardMetrics, getRecentInvoices } from "@/lib/analytics/queries";
-import { DollarSign, AlertTriangle, TrendingUp, RefreshCw } from "lucide-react";
+import { DollarSign, AlertTriangle, TrendingUp, RefreshCw, Settings } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
 import { eq } from "drizzle-orm";
+import Link from "next/link";
 
 export const revalidate = 0;
 
@@ -73,6 +74,9 @@ export default async function DashboardPage() {
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               <span>Tenant Active</span>
             </div>
+            <Link href="/dashboard/settings" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+              <Settings className="w-5 h-5 text-gray-600" />
+            </Link>
             <UserButton />
           </div>
         </div>
