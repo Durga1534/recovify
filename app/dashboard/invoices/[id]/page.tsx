@@ -15,6 +15,7 @@ import {
   DollarSign,
 } from "lucide-react";
 import Link from "next/link";
+import ManualActions from "./ManualActions";
 
 export const revalidate = 0;
 
@@ -156,6 +157,15 @@ export default async function InvoiceDetailPage({ params }: PageProps) {
               </p>
             </div>
           </div>
+        </div>
+
+        {/* Manual Operator Controls */}
+        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-3">
+          <h2 className="text-sm font-bold text-gray-900">Manual Operator Controls</h2>
+          <ManualActions
+            invoiceId={invoice.id}
+            isRecovered={invoice.status === "recovered"}
+          />
         </div>
 
         {/* Timeline History Section */}
