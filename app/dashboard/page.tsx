@@ -160,7 +160,14 @@ export default async function DashboardPage() {
                   recentInvoices.map((invoice) => (
                     <tr key={invoice.id} className="hover:bg-gray-50/50">
                       <td className="px-6 py-4 font-medium text-gray-900">{invoice.customerEmail}</td>
-                      <td className="px-6 py-4 text-xs font-mono text-gray-500">{invoice.stripeInvoiceId}</td>
+                      <td className="px-6 py-4 text-xs font-mono text-gray-500">
+                        <Link
+                          href={`/dashboard/invoices/${invoice.id}`}
+                          className="text-indigo-600 hover:text-indigo-800 hover:underline"
+                        >
+                          {invoice.stripeInvoiceId}
+                        </Link>
+                      </td>
                       <td className="px-6 py-4 font-semibold text-gray-900">
                         {formatCurrency(invoice.amountDue, invoice.currency)}
                       </td>

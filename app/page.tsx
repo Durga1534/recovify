@@ -1,13 +1,19 @@
-import DashboardPage from './dashboard/page'
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+import DashboardPage from "./dashboard/page";
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
-function page() {
+export default async function Page() {
+  const { userId } = await auth();
+
+  if (!userId) {
+    redirect("/sign-in");
+  }
+
   return (
-    <div className="flex min-h-screen flex-col items-center justify-between p-24">
+    <div className="min-h-screen">
       <DashboardPage />
     </div>
-  )
+  );
 }
-
-export default page
