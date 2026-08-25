@@ -2,11 +2,13 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { users } from "@/db/schema";
-import { getDashboardMetrics, getRecentInvoices } from "@/lib/analytics/queries";
-import { DollarSign, AlertTriangle, TrendingUp, RefreshCw, Settings, Palette } from "lucide-react";
+import { getRecentInvoices } from "@/lib/analytics/queries";
+import { getTenantAnalytics } from "@/lib/analytics";
+import { Settings, Palette } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
 import { eq } from "drizzle-orm";
 import Link from "next/link";
+import AnalyticsCards from "@/components/dashboard/AnalyticsCards";
 
 export const revalidate = 0;
 
@@ -44,12 +46,12 @@ export default async function DashboardPage() {
     user = newUser;
   }
 
-  // Redirect to onboarding if Stripe account not connected
+  // Redirect to onboarding if Stripe account is not connected
   if (!user.stripeAccountId) {
     redirect("/dashboard/onboarding");
   }
 
-  const metrics = await getDashboardMetrics(user.id);
+  const analytics = await getTenantAnalytics(user.id);
   const recentInvoices = await getRecentInvoices(user.id, 10);
 
   const formatCurrency = (cents: number, currency: string) => {
@@ -67,69 +69,35 @@ export default async function DashboardPage() {
         <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Recovery Dashboard</h1>
-            <p className="text-gray-500 text-xs">Tenant ID: <span className="font-mono">{user.id}</span></p>
+            <p className="text-gray-500 text-xs">
+              Tenant ID: <span className="font-mono">{user.id}</span>
+            </p>
           </div>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full border border-emerald-200 text-xs font-semibold">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               <span>Tenant Active</span>
             </div>
-            <Link href="/dashboard/settings" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <Link
+              href="/dashboard/settings"
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Settings"
+            >
               <Settings className="w-5 h-5 text-gray-600" />
             </Link>
-            <Link href="/dashboard/template-settings" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <Link
+              href="/dashboard/template-settings"
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Email Templates"
+            >
               <Palette className="w-5 h-5 text-gray-600" />
             </Link>
             <UserButton />
           </div>
         </div>
 
-        {/* Analytics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <div className="flex items-center justify-between text-gray-500">
-              <span className="text-xs font-bold uppercase tracking-wider">Recovered Revenue</span>
-              <DollarSign className="w-5 h-5 text-emerald-600" />
-            </div>
-            <div className="text-2xl font-black mt-2 text-emerald-600">
-              {formatCurrency(metrics.totalRecovered, "usd")}
-            </div>
-            <p className="text-xs text-gray-400 mt-1">{metrics.recoveredCount} invoices saved</p>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <div className="flex items-center justify-between text-gray-500">
-              <span className="text-xs font-bold uppercase tracking-wider">Revenue at Risk</span>
-              <AlertTriangle className="w-5 h-5 text-amber-500" />
-            </div>
-            <div className="text-2xl font-black mt-2 text-amber-600">
-              {formatCurrency(metrics.totalAtRisk, "usd")}
-            </div>
-            <p className="text-xs text-gray-400 mt-1">Currently in dunning sequence</p>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <div className="flex items-center justify-between text-gray-500">
-              <span className="text-xs font-bold uppercase tracking-wider">Recovery Rate</span>
-              <TrendingUp className="w-5 h-5 text-indigo-600" />
-            </div>
-            <div className="text-2xl font-black mt-2 text-gray-900">
-              {metrics.recoveryRate}%
-            </div>
-            <p className="text-xs text-gray-400 mt-1">Target benchmark: 60%+</p>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <div className="flex items-center justify-between text-gray-500">
-              <span className="text-xs font-bold uppercase tracking-wider">Total Failures</span>
-              <RefreshCw className="w-5 h-5 text-gray-400" />
-            </div>
-            <div className="text-2xl font-black mt-2 text-gray-900">
-              {metrics.totalFailedCount}
-            </div>
-            <p className="text-xs text-gray-400 mt-1">Failed payments ingested</p>
-          </div>
-        </div>
+        {/* Analytics Metric Cards Block */}
+        <AnalyticsCards stats={analytics} />
 
         {/* Live Status Table */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -159,7 +127,9 @@ export default async function DashboardPage() {
                 ) : (
                   recentInvoices.map((invoice) => (
                     <tr key={invoice.id} className="hover:bg-gray-50/50">
-                      <td className="px-6 py-4 font-medium text-gray-900">{invoice.customerEmail}</td>
+                      <td className="px-6 py-4 font-medium text-gray-900">
+                        {invoice.customerEmail}
+                      </td>
                       <td className="px-6 py-4 text-xs font-mono text-gray-500">
                         <Link
                           href={`/dashboard/invoices/${invoice.id}`}
