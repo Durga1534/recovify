@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server"
 import { NextResponse } from "next/server"
+import { createOAuthState } from "@/lib/stripe/oauth-state";
 
 export const dynamic = "force-dynamic";
 
@@ -22,9 +23,10 @@ export async function GET() {
     const redirectUri = `${appUrl}/api/stripe/callback`;
 
     //Stripe Connect OAuth Authorize URL
+    const state = createOAuthState(userId);
     const stripeConnectUrl = `https://connect.stripe.com/oauth/authorize?response_type=code&client_id=${clientId}&scope=read_write&redirect_uri=${encodeURIComponent(
         redirectUri
-    )}&state=${userId}`;
+    )}&state=${encodeURIComponent(state)}`;
 
     return NextResponse.redirect(stripeConnectUrl)
 }

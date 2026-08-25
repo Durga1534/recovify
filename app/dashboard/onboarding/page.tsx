@@ -7,7 +7,11 @@ import { CheckCircle2, ShieldCheck, ArrowRight, Zap } from "lucide-react";
 
 export const revalidate = 0;
 
-export default async function OnboardingPage() {
+interface OnboardingPageProps {
+  searchParams: Promise<{ error?: string }>;
+}
+
+export default async function OnboardingPage({ searchParams }: OnboardingPageProps) {
   const { userId: clerkId } = await auth();
 
   if (!clerkId) {
@@ -21,6 +25,7 @@ export default async function OnboardingPage() {
     .limit(1);
 
   const isConnected = Boolean(user?.stripeAccountId);
+  const { error } = await searchParams;
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6 text-gray-900">
@@ -36,6 +41,16 @@ export default async function OnboardingPage() {
             Recovify requires read access to your Stripe webhooks to automatically detect failed subscription payments and begin recovery.
           </p>
         </div>
+
+        {error === "stripe_credentials_mismatch" ? (
+          <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-800">
+            Stripe rejected the authorization code. Confirm that the Connect Client ID and Stripe secret key belong to the same platform and mode, then start a new connection.
+          </div>
+        ) : error && (
+          <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-800">
+            Stripe connection could not be completed. Please try again.
+          </div>
+        )}
 
         {/* Features Checklist */}
         <div className="space-y-4 bg-gray-50 p-6 rounded-xl border border-gray-100 text-sm">
