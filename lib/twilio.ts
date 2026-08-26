@@ -12,16 +12,15 @@ export interface SendWhatsAppParams {
     paymentLink: string;
 }
 
-export async function sendWhatsAppDunning({
+export async function sendWhatsAppDunningMessage({
     toPhone,
     customerName,
     amountDue,
     currency,
     paymentLink
 }: SendWhatsAppParams): Promise<{sid: string | null; error?: string}> {
-    if(!accountSid || !authToken) {
+    if(!accountSid || !authToken || !fromNumber) {
         throw new Error("[Twilio]: Credentials missing. Skipping WhatsApp dispatch");
-        return {sid: null, error: "Twilio credentials missing"};
     }
 
     const client = twilio(accountSid, authToken);
@@ -37,7 +36,7 @@ export async function sendWhatsAppDunning({
         const message = await client.messages.create({
             from: fromNumber,
             to: formattedPhone,
-            body: `Hi ${displayName}, your recent subscription payment of ${formattedAmount} was unsuccessful. Update your card surely here to keep your account active: ${paymentLink}`,
+                body: `Hi ${displayName}, your recent subscription payment of ${formattedAmount} was unsuccessful. Update your card here to keep your account active: ${paymentLink}`,
         });
 
         return {sid: message.sid};

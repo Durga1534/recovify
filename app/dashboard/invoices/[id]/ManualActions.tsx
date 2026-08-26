@@ -2,17 +2,19 @@
 
 import { useState } from "react"
 import {useRouter} from "next/navigation";
-import {Send, StopCircle, Loader2} from "lucide-react"
+import { Send, StopCircle, Loader2, MessageSquare } from "lucide-react";
 
 interface ManualActionsProps {
     invoiceId: string;
     isRecovered: boolean;
+    hasPhone: boolean;
 }
 
-export default function ManualActions({invoiceId, isRecovered}: ManualActionsProps) {
+export default function ManualActions({ invoiceId, isRecovered, hasPhone }: ManualActionsProps) {
     const router = useRouter();
     const [remindLoading, setRemindLoading] = useState(false);
     const [cancelLoading, setCancelLoading] = useState(false);
+    const [whatsappLoading, setWhatsappLoading] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
 
     const handleSendReminder = async () => {
@@ -31,6 +33,25 @@ export default function ManualActions({invoiceId, isRecovered}: ManualActionsPro
             setMessage(err instanceof Error ? err.message : "Error sending reminder");
         } finally {
             setRemindLoading(false);
+        }
+    };
+
+    const handleSendWhatsApp = async () => {
+        setWhatsappLoading(true);
+        setMessage(null);
+        try {
+            const res = await fetch(`/api/invoices/${invoiceId}/whatsapp`, {
+                method: "POST",
+            });
+            const data = await res.json();
+
+            if (!res.ok) throw new Error(data.error || "Failed to send WhatsApp reminder");
+            setMessage("WhatsApp reminder dispatched successfully!");
+            router.refresh();
+        } catch (err: unknown) {
+            setMessage(err instanceof Error ? err.message : "Error sending WhatsApp reminder");
+        } finally {
+            setWhatsappLoading(false);
         }
     };
 
@@ -71,7 +92,7 @@ export default function ManualActions({invoiceId, isRecovered}: ManualActionsPro
             <div className="flex flex-col sm:flex-row items-center gap-3">
                 <button
                   onClick={handleSendReminder}
-                  disabled={remindLoading || cancelLoading}
+                  disabled={remindLoading || cancelLoading || whatsappLoading}
                   className="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-xs py-2.5 px-4 rounded-xl transition-colors shadow-sm cursor-pointer"
                 >
                     {remindLoading ? (
@@ -82,9 +103,20 @@ export default function ManualActions({invoiceId, isRecovered}: ManualActionsPro
                     <span>Send Instant Email Reminder</span>
                     </button> 
 
+                                        {hasPhone && (
+                                            <button
+                                                onClick={handleSendWhatsApp}
+                                                disabled={remindLoading || cancelLoading || whatsappLoading}
+                                                className="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs py-2.5 px-4 rounded-xl transition-colors shadow-sm cursor-pointer"
+                                            >
+                                                {whatsappLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageSquare className="w-4 h-4" />}
+                                                <span>Send WhatsApp Reminder</span>
+                                            </button>
+                                        )}
+
                     <button
                       onClick={handleStopSequence}
-                      disabled={remindLoading || cancelLoading}
+                                            disabled={remindLoading || cancelLoading || whatsappLoading}
                       className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-rose-50 hover:bg-rose-100 disabled:opacity-50 text-rose-700 border border-rose-200 font-bold text-xs py-2.5 px-4 rounded-xl transition-colors cursor-pointer"
                     >
                         {cancelLoading ? (

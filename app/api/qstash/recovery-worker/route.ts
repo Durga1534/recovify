@@ -3,7 +3,7 @@ import { Receiver } from "@upstash/qstash";
 import { db } from "@/db";
 import { failedInvoices, recoveryLogs } from "@/db/schema";
 import { sendDunningEmail } from "@/lib/email/resend";
-import { sendWhatsAppDunning } from "@/lib/whatsapp/twilio";
+import { sendWhatsAppDunningMessage } from "@/lib/twilio";
 import type { QStashWorkerResponse, RecoveryJobPayload } from "@/lib/qstash/types";
 import { eq } from "drizzle-orm";
 
@@ -57,7 +57,7 @@ export async function POST(req: Request): Promise<NextResponse<QStashWorkerRespo
   // 3. Dispatch sequence based on step definition
   if (payload.step === 2 && payload.customerPhone) {
     channel = "whatsapp";
-    const result = await sendWhatsAppDunning({
+    const result = await sendWhatsAppDunningMessage({
       toPhone: payload.customerPhone,
       customerName: invoice.customerName,
       amountDue: invoice.amountDue,

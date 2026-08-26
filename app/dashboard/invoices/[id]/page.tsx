@@ -13,6 +13,9 @@ import {
   User,
   CreditCard,
   DollarSign,
+  Phone,
+  MessageSquare,
+  Mail,
 } from "lucide-react";
 import Link from "next/link";
 import ManualActions from "./ManualActions";
@@ -135,6 +138,12 @@ export default async function InvoiceDetailPage({ params }: PageProps) {
                 {invoice.customerName || "Unnamed Customer"}
               </p>
               <p className="text-xs text-gray-500 truncate">{invoice.customerEmail}</p>
+              {invoice.customerPhone && (
+                <p className="text-xs text-emerald-700 font-mono flex items-center gap-1 mt-0.5">
+                  <Phone className="w-3 h-3" />
+                  {invoice.customerPhone}
+                </p>
+              )}
             </div>
 
             <div className="bg-gray-50 p-4 rounded-xl space-y-1">
@@ -165,6 +174,7 @@ export default async function InvoiceDetailPage({ params }: PageProps) {
           <ManualActions
             invoiceId={invoice.id}
             isRecovered={invoice.status === "recovered"}
+            hasPhone={!!invoice.customerPhone}
           />
         </div>
 
@@ -195,6 +205,7 @@ export default async function InvoiceDetailPage({ params }: PageProps) {
               {logs.map((log) => {
                 const isSuccess = log.status === "sent" || log.status === "delivered";
                 const isFailed = log.status === "failed";
+                const isWhatsApp = log.channel === "whatsapp";
 
                 return (
                   <div key={log.id} className="relative pl-6 group">
@@ -204,6 +215,8 @@ export default async function InvoiceDetailPage({ params }: PageProps) {
                         <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                       ) : isFailed ? (
                         <AlertTriangle className="w-5 h-5 text-rose-600" />
+                      ) : isWhatsApp ? (
+                        <MessageSquare className="w-5 h-5 text-emerald-600" />
                       ) : (
                         <Send className="w-5 h-5 text-indigo-600" />
                       )}
@@ -213,7 +226,18 @@ export default async function InvoiceDetailPage({ params }: PageProps) {
                     <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 hover:border-indigo-200 transition-colors space-y-2">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold uppercase tracking-wider text-indigo-950 bg-indigo-100/70 px-2 py-0.5 rounded-md">
+                          <span
+                            className={`text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-md flex items-center gap-1 ${
+                              isWhatsApp
+                                ? "bg-emerald-100 text-emerald-950"
+                                : "bg-indigo-100/70 text-indigo-950"
+                            }`}
+                          >
+                            {isWhatsApp ? (
+                              <MessageSquare className="w-3 h-3 text-emerald-700" />
+                            ) : (
+                              <Mail className="w-3 h-3 text-indigo-700" />
+                            )}
                             {log.channel || "email"}
                           </span>
                           <span className="text-xs font-semibold text-gray-700">
@@ -237,7 +261,9 @@ export default async function InvoiceDetailPage({ params }: PageProps) {
                       ) : (
                         <p className="text-xs text-gray-600 leading-relaxed">
                           Message dispatched to{" "}
-                          <span className="font-semibold text-gray-800">{invoice.customerEmail}</span>.
+                          <span className="font-semibold text-gray-800">
+                            {isWhatsApp ? invoice.customerPhone : invoice.customerEmail}
+                          </span>.
                           {log.payloadMessageId && (
                             <span className="block text-gray-400 font-mono mt-1">
                               Message ID: {log.payloadMessageId}
