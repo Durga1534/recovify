@@ -34,27 +34,20 @@ export async function GET() {
      }
 
      try {
-        // Retrive webhook endpoints for the connected account
-        const endpoints = await stripe.webhookEndpoints.list(
-            {limit: 10},
+        // Verify the connected account. Stripe OAuth does not permit this app
+        // to list webhook endpoints on the connected account.
+        const account = await stripe.accounts.retrieve(
+            user.stripeAccountId,
+            {},
             {stripeAccount: user.stripeAccountId}
-        )
-
-        const targetPath = "/api/webhooks/stripe";
-        const activeEndPoint = endpoints.data.find(
-            (ep) => ep.url.includes(targetPath) && ep.status === "enabled"
-        );
-
-        const hasFailedInvoiceEvent = activeEndPoint?.enabled_events.some(
-            (evt) => evt === "*" || evt === "invoice.payment_failed"
         );
 
         return NextResponse.json({
-            connected: true,
+            connected: account && !account.deleted,
             stripeAccountId: user.stripeAccountId,
-            webhookActive: Boolean(activeEndPoint && hasFailedInvoiceEvent),
-            endpointUrl: activeEndPoint?.url ?? null,
-            events: activeEndPoint?.enabled_events ?? [],
+            webhookActive: null,
+            webhookStatus: "not_verifiable_through_oauth",
+            message: "Stripe account connection is valid. Webhook endpoint status must be verified from the platform account or Stripe CLI.",
             lastChecked: new Date().toISOString(),
         });
      } catch (error) {
@@ -63,7 +56,7 @@ export async function GET() {
             connected: true,
             stripeAccountId: user.stripeAccountId,
             webhookActive: false,
-            error: "Failed to query Stripe webhook configuration."
+            error: error instanceof Error ? error.message : "Failed to verify Stripe account connection."
         }, 
         {status: 500}
        );
