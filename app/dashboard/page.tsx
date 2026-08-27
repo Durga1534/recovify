@@ -9,6 +9,7 @@ import { UserButton } from "@clerk/nextjs";
 import { eq } from "drizzle-orm";
 import Link from "next/link";
 import AnalyticsCards from "@/components/dashboard/AnalyticsCards";
+import ExportCSVButton from "./_components/ExportCSVButton";
 
 export const revalidate = 0;
 
@@ -109,8 +110,13 @@ export default async function DashboardPage() {
         {/* Live Status Table */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="text-lg font-bold">Your Failed Invoices</h2>
-            <span className="text-xs font-semibold text-gray-400">Tenant Isolated</span>
+            <div>
+              <h2 className="text-lg font-bold">Your Failed Invoices</h2>
+              <span className="text-xs font-semibold text-gray-400">Tenant Isolated</span>
+            </div>
+
+            {/* Export CSV Action */}
+            <ExportCSVButton />
           </div>
 
           <div className="overflow-x-auto">
