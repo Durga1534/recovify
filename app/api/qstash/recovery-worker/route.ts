@@ -70,6 +70,7 @@ export async function POST(req: Request): Promise<NextResponse<QStashWorkerRespo
   } else {
     channel = "email";
     const result = await sendDunningEmail({
+      userId: invoice.userId,
       to: invoice.customerEmail,
       customerName: invoice.customerName,
       amountDue: invoice.amountDue,
