@@ -2,11 +2,17 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { dunningSettings, failedInvoices, users } from "@/db/schema";
 import { stripe } from "@/lib/stripe/client";
+import { verifyPaymentAccessToken } from "@/lib/stripe/payment-access";
 import { eq } from "drizzle-orm";
 
 export async function POST(req: Request,{ params }: { params: Promise<{ invoiceId: string }> }) {
   try {
     const { invoiceId } = await params;
+    const token = new URL(req.url).searchParams.get("token");
+
+    if (!verifyPaymentAccessToken(invoiceId, token)) {
+      return NextResponse.json({ error: "Invalid or expired payment link" }, { status: 401 });
+    }
 
     // 1. Fetch the invoice (unauthenticated for customer portal access)
     const [invoice] = await db

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, use } from "react";
+import { useSearchParams } from "next/navigation";
 import { loadStripe, Stripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import { CreditCard, Loader2, AlertCircle } from "lucide-react";
@@ -12,6 +13,7 @@ interface PageProps {
 
 export default function CustomerPayPage({ params }: PageProps) {
   const { invoiceId } = use(params);
+  const token = useSearchParams().get("token");
 
   const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -27,7 +29,7 @@ export default function CustomerPayPage({ params }: PageProps) {
   useEffect(() => {
     async function initSession() {
       try {
-        const res = await fetch(`/api/pay/${invoiceId}/setup-intent`, {
+        const res = await fetch(`/api/pay/${invoiceId}/setup-intent?token=${encodeURIComponent(token || "")}`, {
           method: "POST",
         });
 
@@ -60,7 +62,7 @@ export default function CustomerPayPage({ params }: PageProps) {
     }
 
     initSession();
-  }, [invoiceId]);
+  }, [invoiceId, token]);
 
   if (loading) {
     return (
@@ -127,6 +129,7 @@ export default function CustomerPayPage({ params }: PageProps) {
               customerName={details.customerName}
               companyName={details.companyName}
               amountFormatted={details.amountFormatted}
+              paymentToken={token || ""}
             />
           </Elements>
         </div>

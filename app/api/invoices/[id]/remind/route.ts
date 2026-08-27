@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import {db} from "@/db";
 import {users, failedInvoices, recoveryLogs} from "@/db/schema";
 import { sendDunningEmail } from "@/lib/email/resend";
+import { createPaymentAccessToken } from "@/lib/stripe/payment-access";
+import { getAppUrl } from "@/lib/app-url";
 import {eq, and} from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
@@ -37,7 +39,7 @@ export async function POST(req: Request, {params}: {params: Promise<{id: string}
             return NextResponse.json({error: "Invoice not found"}, {status: 404});
         }
 
-        const paymentLink = invoice.hostedInvoiceUrl || process.env.NEXT_PUBLIC_APP_URL || "https://stripe.com";
+        const paymentLink = invoice.hostedInvoiceUrl || `${getAppUrl()}/pay/${invoice.id}?token=${createPaymentAccessToken(invoice.id)}`;
 
         try {
             // Send email via Resend engine

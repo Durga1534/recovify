@@ -4,6 +4,8 @@ import { db } from "@/db";
 import { failedInvoices, users, recoveryLogs } from "@/db/schema";
 import {eq, and} from "drizzle-orm";
 import { sendWhatsAppDunningMessage } from "@/lib/twilio";
+import { getAppUrl } from "@/lib/app-url";
+import { createPaymentAccessToken } from "@/lib/stripe/payment-access";
 
 export async function POST (_req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
@@ -39,7 +41,7 @@ export async function POST (_req: Request, { params }: { params: Promise<{ id: s
             return NextResponse.json({error: "Customer has no phone number recorded"}, {status: 400})
         }
 
-        const updateUrl = `${process.env.NEXT_PUBLIC_APP_URL}/pay/${invoice.id}`;
+        const updateUrl = `${getAppUrl()}/pay/${invoice.id}?token=${createPaymentAccessToken(invoice.id)}`;
 
         // Send WhatsApp message via Twilio
         const res = await sendWhatsAppDunningMessage({

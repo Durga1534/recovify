@@ -6,6 +6,8 @@ import { sendDunningEmail } from "@/lib/email/resend";
 import { sendWhatsAppDunningMessage } from "@/lib/twilio";
 import type { QStashWorkerResponse, RecoveryJobPayload } from "@/lib/qstash/types";
 import { eq } from "drizzle-orm";
+import { createPaymentAccessToken } from "@/lib/stripe/payment-access";
+import { getAppUrl } from "@/lib/app-url";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +52,7 @@ export async function POST(req: Request): Promise<NextResponse<QStashWorkerRespo
     );
   }
 
-  const paymentLink = invoice.hostedInvoiceUrl || process.env.NEXT_PUBLIC_APP_URL || "https://stripe.com";
+  const paymentLink = invoice.hostedInvoiceUrl || `${getAppUrl()}/pay/${invoice.id}?token=${createPaymentAccessToken(invoice.id)}`;
   let messageId: string | null = null;
   let channel: "email" | "whatsapp" = "email";
 

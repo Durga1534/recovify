@@ -1,5 +1,6 @@
 import { Client } from "@upstash/qstash";
 import type { RecoveryJobPayload } from "./types";
+import { getAppUrl } from "@/lib/app-url";
 if(!process.env.QSTASH_TOKEN) {
     throw new Error("QSTASH_TOKEN environment variable is missing.");
 }
@@ -9,7 +10,7 @@ export const qstashClient = new Client({
 });
 
 export async function publishRecoverySequence(payload: Omit<RecoveryJobPayload, "step">) {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const baseUrl = getAppUrl();
     const targetUrl = `${baseUrl}/api/qstash/recovery-worker`;
 
     // Define delays in seconds

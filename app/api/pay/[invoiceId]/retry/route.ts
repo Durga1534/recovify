@@ -2,12 +2,17 @@ import { NextResponse } from "next/server";
 import {db} from "@/db";
 import {users, recoveryLogs, failedInvoices} from "@/db/schema";
 import { stripe } from "@/lib/stripe/client";
+import { verifyPaymentAccessToken } from "@/lib/stripe/payment-access";
 import {eq} from "drizzle-orm";
 
 export async function POST(req: Request, {params}: {params: Promise<{invoiceId: string}>}) {
     try {
         const { invoiceId } = await params;
-        const {paymentMethodId} = await req.json();
+        const { paymentMethodId, token } = await req.json();
+
+        if (!verifyPaymentAccessToken(invoiceId, token)) {
+          return NextResponse.json({ error: "Invalid or expired payment link" }, { status: 401 });
+        }
 
         if(!paymentMethodId) {
             return NextResponse.json({error: "Payment method ID required"}, {status: 400});

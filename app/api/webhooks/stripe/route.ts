@@ -57,25 +57,25 @@ export async function POST(req: Request): Promise<NextResponse<StripeWebhookResp
         break;
       }
 
-      // Lookup targeted user account or fallback to active tenant
-      const targetAccount = event.account ?? "";
+      // Connected-account events must identify their tenant explicitly.
+      const targetAccount = event.account;
 
-      const [userWithAccount] = await db
-            .select()
-            .from(users)
-            .where(eq(users.stripeAccountId, targetAccount))
-            .limit(1);
-
-      let targetUser = userWithAccount; 
-
-      if (!targetUser) {
-        const [firstUser] = await db.select().from(users).limit(1);
-        targetUser = firstUser
+      if (!targetAccount) {
+        return NextResponse.json(
+          { received: false, error: "Webhook event is missing a connected account" },
+          { status: 422 }
+        );
       }
 
-      if (!targetUser) {
+      const [userWithAccount] = await db
+        .select()
+        .from(users)
+        .where(eq(users.stripeAccountId, targetAccount))
+        .limit(1);
+
+      if (!userWithAccount) {
         return NextResponse.json(
-          { received: false, error: "No target user found" },
+          { received: false, error: "No user is linked to this Stripe account" },
           { status: 422 }
         );
       }
@@ -84,7 +84,7 @@ export async function POST(req: Request): Promise<NextResponse<StripeWebhookResp
       const [record] = await db
         .insert(failedInvoices)
         .values({
-          userId: targetUser.id,
+          userId: userWithAccount.id,
           stripeInvoiceId,
           stripeCustomerId,
           customerEmail,

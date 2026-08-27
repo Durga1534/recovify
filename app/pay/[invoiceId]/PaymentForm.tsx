@@ -13,6 +13,7 @@ interface PaymentFormProps {
   customerName: string;
   companyName: string;
   amountFormatted: string;
+  paymentToken: string;
 }
 
 export default function PaymentForm({
@@ -20,6 +21,7 @@ export default function PaymentForm({
   customerName,
   companyName,
   amountFormatted,
+  paymentToken,
 }: PaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
@@ -59,7 +61,7 @@ export default function PaymentForm({
         const response = await fetch(`/api/pay/${invoiceId}/retry`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ paymentMethodId }),
+          body: JSON.stringify({ paymentMethodId, token: paymentToken }),
         });
 
         const data = await response.json();
