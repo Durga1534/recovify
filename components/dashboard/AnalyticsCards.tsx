@@ -1,16 +1,8 @@
 import { DollarSign, Percent, Clock, AlertCircle } from "lucide-react";
+import type { AnalyticsSummary } from "@/lib/analytics";
 
 interface AnalyticsCardsProps {
-    stats: {
-        totalRecoveredCents: number;
-        totalPendingCents: number;
-        totalFailedCents: number;
-        recoveredCount: number;
-        pendingCount: number;
-        failedCount: number;
-        totalInvoices: number;
-        recoveryRate: number;
-    };
+    stats: AnalyticsSummary;
 }
 
 export default function AnalyticsCards({ stats }: AnalyticsCardsProps) {
@@ -35,7 +27,7 @@ export default function AnalyticsCards({ stats }: AnalyticsCardsProps) {
                     </div>
                     <div>
                         <h3 className="text-2xl font-bold text-gray-900">
-                            {formatCurrency(stats.totalRecoveredCents)}
+                            {formatCurrency(stats.totalRecoveredAmount)}
                         </h3>
                         <p className="text-xs text-gray-500 mt-1">
                             <span className="font-semibold text-emerald-600">
@@ -78,7 +70,7 @@ export default function AnalyticsCards({ stats }: AnalyticsCardsProps) {
                     </div>
                     <div>
                         <h3 className="text-2xl font-bold text-gray-900">
-                            {formatCurrency(stats.totalPendingCents)}
+                            {formatCurrency(stats.totalPendingAmount)}
                         </h3>
                         <p className="text-xs text-gray-500 mt-1">
                             <span className="font-semibold text-amber-600">
@@ -101,7 +93,7 @@ export default function AnalyticsCards({ stats }: AnalyticsCardsProps) {
                     </div>
                     <div>
                         <h3 className="text-2xl font-bold text-gray-900">
-                            {formatCurrency(stats.totalFailedCents)}
+                            {formatCurrency(stats.totalFailedAmount)}
                         </h3>
                         <p className="text-xs text-gray-500 mt-1">
                             <span className="font-semibold text-rose-600">

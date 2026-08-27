@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { getRecentInvoices } from "@/lib/analytics/queries";
 import { getTenantAnalytics } from "@/lib/analytics";
-import { Settings, Palette } from "lucide-react";
+import { Settings, Palette, BarChart3 } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
 import { eq } from "drizzle-orm";
 import Link from "next/link";
@@ -91,6 +91,13 @@ export default async function DashboardPage() {
               title="Email Templates"
             >
               <Palette className="w-5 h-5 text-gray-600" />
+            </Link>
+            <Link
+              href="/dashboard/analytics"
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Detailed Analytics"
+            >
+              <BarChart3 className="w-5 h-5 text-gray-600" />
             </Link>
             <UserButton />
           </div>
